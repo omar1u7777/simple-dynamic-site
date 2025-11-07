@@ -184,6 +184,17 @@ header {
   margin-top: 0.6rem;
 }
 
+.read-more-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.read-more-link:hover {
+  text-decoration: underline;
+}
+
 .post .meta {
   font-size: 0.9rem;
   color: var(--muted);
@@ -357,6 +368,158 @@ footer {
 .modal .dialog {
   background: var(--card);
   color: var(--text);
+}
+
+/* Post Detail Page Styles */
+.post-detail-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.post-detail {
+  background: var(--card);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.post-detail h1 {
+  margin-top: 0;
+  color: var(--text);
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.post-detail .post-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.post-detail .post-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.post-detail .post-date {
+  color: var(--muted);
+}
+
+.post-detail .post-content {
+  line-height: 1.7;
+  font-size: 1.1rem;
+  margin: 2rem 0;
+  color: var(--text);
+}
+
+.post-detail .post-tags {
+  margin: 2rem 0;
+}
+
+.post-detail .comments-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border);
+}
+
+.post-detail .comments-section h2 {
+  margin-bottom: 1.5rem;
+  color: var(--text);
+}
+
+.post-detail .comment {
+  background: var(--bg);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--accent);
+}
+
+.post-detail .comment strong {
+  color: var(--accent);
+}
+
+.post-detail-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.share-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.share-btn:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.error-message {
+  text-align: center;
+  padding: 3rem;
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.error-message h2 {
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+
+/* Responsive adjustments for post detail */
+@media (max-width: 768px) {
+  .post-detail-container {
+    margin: 1rem auto;
+    padding: 0 0.5rem;
+  }
+
+  .post-detail {
+    padding: 1rem;
+  }
+
+  .post-detail h1 {
+    font-size: 1.5rem;
+  }
+
+  .post-detail-actions {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .share-buttons {
+    justify-content: center;
+  }
 }
 
 footer p {

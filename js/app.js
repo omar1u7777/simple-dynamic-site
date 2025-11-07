@@ -214,9 +214,9 @@ function renderPosts(posts) {
 
     // Kommentarer
     var commentsHtml = renderCommentsForPost(p.id)
-    
+
     html += '<div class="comments"><strong>Kommentarer:</strong><div class="comments-list">' + commentsHtml + '</div></div>'
-    html += '<div class="post-id">Inlägg ID: ' + p.id + '</div>'
+    html += '<div class="post-id"><a href="post-detail.html?post=' + p.id + '" class="read-more-link">Läs mer →</a> | ID: ' + p.id + '</div>'
 
     article.innerHTML = html
     container.appendChild(article)
@@ -479,6 +479,215 @@ function loadUserPreferences() {
 }
 
 /**
+ * Loads and displays a detailed view of a single post.
+ * @param {number} postId - The ID of the post to display.
+ */
+async function loadPostDetail(postId) {
+  var loadingEl = el('#post-detail-loading')
+  var contentEl = el('#post-detail-content')
+  var actionsEl = el('#post-detail-actions')
+  var errorEl = el('#error-message')
+
+  try {
+    // Show loading
+    if (loadingEl) loadingEl.style.display = 'flex'
+    if (contentEl) contentEl.style.display = 'none'
+    if (actionsEl) actionsEl.style.display = 'none'
+    if (errorEl) errorEl.style.display = 'none'
+
+    // Fetch post data
+    var [users, postData, comments] = await Promise.all([
+      API.fetchAllUsers(),
+      API.fetchPosts(1, 0).then(data => data.posts.find(p => p.id === postId)),
+      API.fetchCommentsForPost(postId)
+    ])
+
+    if (!postData) {
+      throw new Error('Inlägget hittades inte')
+    }
+
+    // Store users for profile modal
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i]
+      state.usersById[u.id] = u
+    }
+
+    // Render post detail
+    renderPostDetail(postData, comments, users)
+
+    // Update page title and meta tags
+    updatePageMeta(postData)
+
+    // Hide loading, show content
+    if (loadingEl) loadingEl.style.display = 'none'
+    if (contentEl) contentEl.style.display = 'block'
+    if (actionsEl) actionsEl.style.display = 'flex'
+
+  } catch (err) {
+    console.error('Error loading post detail:', err)
+    if (loadingEl) loadingEl.style.display = 'none'
+    if (errorEl) errorEl.style.display = 'block'
+
+    var retryBtn = el('#retry-btn')
+    if (retryBtn) {
+      retryBtn.onclick = function() { loadPostDetail(postId) }
+    }
+  }
+}
+
+/**
+ * Renders the detailed view of a post.
+ * @param {object} post - The post object.
+ * @param {array} comments - Array of comments for the post.
+ * @param {array} users - Array of all users.
+ */
+function renderPostDetail(post, comments, users) {
+  var container = el('#post-detail-content')
+  if (!container) return
+
+  var user = users.find(u => u.id === post.userId)
+  var username = user ? user.username : 'Okänd'
+  var reactions = (post.reactions && typeof post.reactions === 'object' && post.reactions.likes !== undefined) ? post.reactions.likes : (post.reactions || 0)
+
+  var html = ''
+  html += '<h1>' + escapeHtml(post.title) + '</h1>'
+  html += '<div class="post-meta">'
+  html += '<div class="post-author">'
+  html += '<a href="#" class="username" data-uid="' + post.userId + '">' + escapeHtml(username) + '</a>'
+  html += '</div>'
+  html += '<div class="post-date">Reaktioner: ' + reactions + '</div>'
+  html += '</div>'
+
+  html += '<div class="post-content">' + escapeHtml(post.body) + '</div>'
+
+  if (post.tags && post.tags.length > 0) {
+    html += '<div class="post-tags">'
+    html += '<strong>Taggar:</strong> '
+    for (var i = 0; i < post.tags.length; i++) {
+      html += '<span class="tag">' + escapeHtml(post.tags[i]) + '</span>'
+    }
+    html += '</div>'
+  }
+
+  if (comments && comments.length > 0) {
+    html += '<div class="comments-section">'
+    html += '<h2>Kommentarer (' + comments.length + ')</h2>'
+    for (var i = 0; i < comments.length; i++) {
+      var comment = comments[i]
+      var commentUser = comment.user || {}
+      var commentUsername = commentUser.username || 'Anonym'
+      html += '<div class="comment">'
+      html += '<strong>' + escapeHtml(commentUsername) + ':</strong> ' + escapeHtml(comment.body)
+      html += '</div>'
+    }
+    html += '</div>'
+  }
+
+  container.innerHTML = html
+
+  // Add click listeners for usernames
+  var usernameLinks = container.querySelectorAll('.username')
+  for (var k = 0; k < usernameLinks.length; k++) {
+    (function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault()
+        var uid = Number(link.getAttribute('data-uid'))
+        var u = state.usersById[uid]
+        renderUserProfile(u)
+      })
+    })(usernameLinks[k])
+  }
+
+  // Setup sharing buttons
+  setupShareButtons(post)
+}
+
+/**
+ * Updates page title and meta tags for SEO.
+ * @param {object} post - The post object.
+ */
+function updatePageMeta(post) {
+  document.title = escapeHtml(post.title) + ' - Min Sida'
+
+  // Update meta tags
+  var description = post.body.substring(0, 160) + '...'
+  updateMetaTag('description', description)
+  updateMetaTag('og:title', post.title)
+  updateMetaTag('og:description', description)
+  updateMetaTag('og:url', window.location.href)
+}
+
+/**
+ * Updates or creates a meta tag.
+ * @param {string} name - Meta tag name.
+ * @param {string} content - Meta tag content.
+ */
+function updateMetaTag(name, content) {
+  var meta = document.querySelector('meta[name="' + name + '"]') ||
+             document.querySelector('meta[property="' + name + '"]')
+  if (meta) {
+    meta.setAttribute('content', content)
+  } else {
+    meta = document.createElement('meta')
+    meta.setAttribute(name.includes('og:') ? 'property' : 'name', name)
+    meta.setAttribute('content', content)
+    document.head.appendChild(meta)
+  }
+}
+
+/**
+ * Sets up share buttons for the post.
+ * @param {object} post - The post object.
+ */
+function setupShareButtons(post) {
+  var shareContainer = el('#share-buttons')
+  if (!shareContainer) return
+
+  var url = window.location.href
+  var title = encodeURIComponent(post.title)
+  var text = encodeURIComponent(post.body.substring(0, 100) + '...')
+
+  var shareButtons = [
+    {
+      name: 'Facebook',
+      icon: '📘',
+      url: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url)
+    },
+    {
+      name: 'Twitter',
+      icon: '🐦',
+      url: 'https://twitter.com/intent/tweet?text=' + title + '&url=' + encodeURIComponent(url)
+    },
+    {
+      name: 'LinkedIn',
+      icon: '💼',
+      url: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(url)
+    },
+    {
+      name: 'Kopiera länk',
+      icon: '🔗',
+      action: function() {
+        navigator.clipboard.writeText(url).then(function() {
+          alert('Länk kopierad till urklipp!')
+        })
+      }
+    }
+  ]
+
+  var html = ''
+  for (var i = 0; i < shareButtons.length; i++) {
+    var btn = shareButtons[i]
+    if (btn.action) {
+      html += '<button class="share-btn" onclick="' + btn.action.toString().replace('function() {', '').replace('}', '') + '">' + btn.icon + ' ' + btn.name + '</button>'
+    } else {
+      html += '<a href="' + btn.url + '" target="_blank" class="share-btn">' + btn.icon + ' ' + btn.name + '</a>'
+    }
+  }
+
+  shareContainer.innerHTML = html
+}
+
+/**
  * Initializes the application based on the current page.
  */
 document.addEventListener('DOMContentLoaded', function () {
@@ -544,6 +753,29 @@ document.addEventListener('DOMContentLoaded', function () {
     var themeBtn = el('#theme-toggle')
     if (themeBtn) {
       themeBtn.addEventListener('click', toggleTheme)
+    }
+  } else if (page === 'post-detail') {
+    // Get post ID from URL parameters
+    var urlParams = new URLSearchParams(window.location.search)
+    var postId = parseInt(urlParams.get('post'))
+    if (postId) {
+      loadPostDetail(postId)
+    } else {
+      el('#error-message').style.display = 'block'
+    }
+
+    // Back to posts button
+    var backBtn = el('#back-to-posts')
+    if (backBtn) {
+      backBtn.addEventListener('click', function() {
+        window.location.href = 'posts.html'
+      })
+    }
+
+    // Modal functionality
+    var modalEl = el('#modal')
+    if (modalEl) {
+      modalEl.addEventListener('click', function (e) { if (e.target.id === 'modal') closeModal() })
     }
   } else if (page === 'contact') {
     setupContact()

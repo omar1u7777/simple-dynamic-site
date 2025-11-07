@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Inläggsdetaljer</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Min Sida">
+</head>
+<body data-page="post-detail">
+  <header>
+    <nav class="nav">
+      <div class="nav-brand">
+        <img src="./assets/images/omar.jpg" alt="Profilbild för Omar Alhaek" class="header-avatar" width="36" height="36" loading="lazy">
+        <a href="index.html">Min Sida</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html" data-nav="home">Hem</a></li>
+        <li><a href="posts.html" data-nav="posts">Inlägg</a></li>
+        <li><a href="contact.html" data-nav="contact">Kontakt</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Öppna navigation">☰</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="post-detail-container">
+      <div class="post-detail-loading" id="post-detail-loading">
+        <div class="spinner"></div>
+        <p>Laddar inlägg...</p>
+      </div>
+
+      <article class="post-detail" id="post-detail-content" style="display: none;">
+        <!-- Post content will be inserted here -->
+      </article>
+
+      <div class="post-detail-actions" id="post-detail-actions" style="display: none;">
+        <button id="back-to-posts" class="btn">← Tillbaka till inlägg</button>
+        <div class="share-buttons" id="share-buttons">
+          <!-- Share buttons will be inserted here -->
+        </div>
+      </div>
+
+      <div class="error-message" id="error-message" style="display: none;">
+        <h2>Något gick fel</h2>
+        <p>Kunde inte ladda inlägget. <button id="retry-btn" class="btn">Försök igen</button></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Omar Alhaek — Frontend Dev</p>
+  </footer>
+
+  <div id="modal" class="modal" aria-hidden="true"></div>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
