@@ -89,8 +89,8 @@ Detta projekt är licensierat under MIT License - se [LICENSE](LICENSE) filen f�
 ## 👤 Författare
 
 **Omar Alhaek**
-- Frontend Dev Student, Högskolan i Kristianstad
-- GitHub: [ditt-github-användarnamn](https://github.com/ditt-github-användarnamn)
+- Software Dev Student, Högskolan i Kristianstad
+- GitHub: https://github.com/omar1u7777  . 
 
 ## ⚠️ Viktigt
 
