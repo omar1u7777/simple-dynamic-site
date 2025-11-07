@@ -25,9 +25,29 @@
   <main>
     <section class="posts-container">
       <h1>Inlägg</h1>
+
+      <!-- Search and Filter Section -->
+      <div class="search-filter-section">
+        <div class="search-container">
+          <input type="text" id="search-input" placeholder="Sök inlägg..." class="search-input">
+          <button id="search-btn" class="btn search-btn">Sök</button>
+        </div>
+        <div class="filter-container">
+          <select id="tag-filter" class="tag-filter">
+            <option value="">Alla taggar</option>
+          </select>
+          <button id="clear-filters" class="btn clear-btn">Rensa filter</button>
+        </div>
+      </div>
+
       <div class="posts-grid">
         <div class="posts-column">
-          <div id="posts-list" class="posts-list">Laddar inlägg...</div>
+          <div id="posts-list" class="posts-list">
+            <div class="loading-spinner" id="loading-spinner">
+              <div class="spinner"></div>
+              <p>Laddar inlägg...</p>
+            </div>
+          </div>
           <div class="posts-actions">
             <button id="load-more" class="btn">Ladda fler</button>
             <p id="posts-message" class="muted"></p>
@@ -36,6 +56,9 @@
         <aside class="sidebar">
           <h3>Om</h3>
           <p>Klicka på ett användarnamn för att se användarens profil.</p>
+          <div class="sidebar-controls">
+            <button id="theme-toggle" class="btn theme-btn">🌙 Mörkt läge</button>
+          </div>
         </aside>
       </div>
     </section>

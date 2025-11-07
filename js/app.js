@@ -1,12 +1,17 @@
 // Enkel state-variabel
 var state = {
   posts: [],
+  filteredPosts: [],
   commentsByPost: {},
   usersById: {},
   postsSkip: 0,
   postsLimit: 8,
   postsTotal: 0,
-  allComments: []
+  allComments: [],
+  allTags: [],
+  searchQuery: '',
+  selectedTag: '',
+  theme: 'light'
 }
 
 const el = (s) => document.querySelector(s);
@@ -116,7 +121,7 @@ async function loadInitialPosts() {
   var loadBtn = el('#load-more')
   var postsMsg = el('#posts-message')
   try {
-    if (postsListEl) postsListEl.innerHTML = 'Laddar inlägg...'
+    toggleLoadingSpinner(true)
 
     // Hämta användare, inlägg och alla kommentarer parallellt
     var [users, postsData, allComments] = await Promise.all([
@@ -149,13 +154,22 @@ async function loadInitialPosts() {
       state.commentsByPost[postId] = allComments.filter(c => c.postId === postId)
     }
 
-    renderPosts(state.posts)
+    // Samla alla unika taggar
+    collectAllTags(state.posts)
+
+    // Initiera filtrerade inlägg
+    state.filteredPosts = state.posts.slice()
+
+    renderPosts(state.filteredPosts)
+    populateTagFilter()
+    toggleLoadingSpinner(false)
 
     if (state.postsSkip >= state.postsTotal && loadBtn) {
       loadBtn.disabled = true
     }
-    if (postsMsg) postsMsg.textContent = 'Visar ' + state.postsSkip + ' av ' + state.postsTotal
+    if (postsMsg) postsMsg.textContent = 'Visar ' + state.filteredPosts.length + ' av ' + state.postsTotal + ' inlägg'
   } catch (err) {
+    toggleLoadingSpinner(false)
     if (postsListEl) postsListEl.innerHTML = '<p class="muted">Fel vid inläsning av inlägg: ' + err.message + '</p>'
   }
 }
@@ -262,9 +276,14 @@ async function loadMorePosts() {
     state.posts = state.posts.concat(newPosts)
     state.postsSkip = state.postsSkip + newPosts.length
 
-    renderPosts(state.posts)
+    // Uppdatera taggar och filtrera
+    collectAllTags(state.posts)
+    applyFilters()
+
+    renderPosts(state.filteredPosts)
+    populateTagFilter()
     if (state.postsSkip >= (postsData.total || state.postsTotal) && loadBtn) loadBtn.disabled = true
-    if (msg) msg.textContent = 'Visar ' + state.postsSkip + ' av ' + (postsData.total || state.postsTotal)
+    if (msg) msg.textContent = 'Visar ' + state.filteredPosts.length + ' av ' + (postsData.total || state.postsTotal) + ' inlägg'
   } catch (err) {
     var postsMsgEl = el('#posts-message')
     if (postsMsgEl) postsMsgEl.textContent = 'Fel vid inläsning av fler: ' + err.message
@@ -348,18 +367,183 @@ function escapeHtml(text) {
 }
 
 /**
+ * Collects all unique tags from posts.
+ * @param {array} posts - Array of post objects.
+ */
+function collectAllTags(posts) {
+  var tagSet = new Set()
+  for (var i = 0; i < posts.length; i++) {
+    var post = posts[i]
+    if (post.tags && Array.isArray(post.tags)) {
+      for (var j = 0; j < post.tags.length; j++) {
+        tagSet.add(post.tags[j])
+      }
+    }
+  }
+  state.allTags = Array.from(tagSet).sort()
+}
+
+/**
+ * Populates the tag filter dropdown.
+ */
+function populateTagFilter() {
+  var tagFilter = el('#tag-filter')
+  if (!tagFilter) return
+
+  // Clear existing options except the first one
+  while (tagFilter.options.length > 1) {
+    tagFilter.remove(1)
+  }
+
+  // Add tag options
+  for (var i = 0; i < state.allTags.length; i++) {
+    var option = document.createElement('option')
+    option.value = state.allTags[i]
+    option.textContent = state.allTags[i]
+    tagFilter.appendChild(option)
+  }
+}
+
+/**
+ * Applies search and tag filters to posts.
+ */
+function applyFilters() {
+  var filtered = state.posts.slice()
+
+  // Apply search filter
+  if (state.searchQuery.trim()) {
+    var query = state.searchQuery.toLowerCase()
+    filtered = filtered.filter(function(post) {
+      return post.title.toLowerCase().includes(query) ||
+             post.body.toLowerCase().includes(query) ||
+             (post.tags && post.tags.some(tag => tag.toLowerCase().includes(query)))
+    })
+  }
+
+  // Apply tag filter
+  if (state.selectedTag) {
+    filtered = filtered.filter(function(post) {
+      return post.tags && post.tags.includes(state.selectedTag)
+    })
+  }
+
+  state.filteredPosts = filtered
+}
+
+/**
+ * Shows or hides the loading spinner.
+ * @param {boolean} show - Whether to show the spinner.
+ */
+function toggleLoadingSpinner(show) {
+  var spinner = el('#loading-spinner')
+  var postsList = el('#posts-list')
+  if (spinner && postsList) {
+    if (show) {
+      postsList.innerHTML = ''
+      spinner.style.display = 'flex'
+    } else {
+      spinner.style.display = 'none'
+    }
+  }
+}
+
+/**
+ * Toggles between light and dark theme.
+ */
+function toggleTheme() {
+  state.theme = state.theme === 'light' ? 'dark' : 'light'
+  document.documentElement.setAttribute('data-theme', state.theme)
+  localStorage.setItem('theme', state.theme)
+
+  // Update button text
+  var themeBtn = el('#theme-toggle')
+  if (themeBtn) {
+    themeBtn.textContent = state.theme === 'dark' ? '☀️ Ljust läge' : '🌙 Mörkt läge'
+  }
+}
+
+/**
+ * Loads user preferences from localStorage.
+ */
+function loadUserPreferences() {
+  var savedTheme = localStorage.getItem('theme')
+  if (savedTheme) {
+    state.theme = savedTheme
+    document.documentElement.setAttribute('data-theme', state.theme)
+  }
+
+  var themeBtn = el('#theme-toggle')
+  if (themeBtn) {
+    themeBtn.textContent = state.theme === 'dark' ? '☀️ Ljust läge' : '🌙 Mörkt läge'
+  }
+}
+
+/**
  * Initializes the application based on the current page.
  */
 document.addEventListener('DOMContentLoaded', function () {
   setupNav()
+  loadUserPreferences()
+
   var page = document.body.dataset.page
   if (page === 'posts') {
+    toggleLoadingSpinner(true)
     loadInitialPosts()
+
     var loadBtn = el('#load-more')
     if (loadBtn) loadBtn.addEventListener('click', loadMorePosts)
+
     var modalEl = el('#modal')
     if (modalEl) {
       modalEl.addEventListener('click', function (e) { if (e.target.id === 'modal') closeModal() })
+    }
+
+    // Search functionality
+    var searchInput = el('#search-input')
+    var searchBtn = el('#search-btn')
+    if (searchInput && searchBtn) {
+      searchBtn.addEventListener('click', function() {
+        state.searchQuery = searchInput.value
+        applyFilters()
+        renderPosts(state.filteredPosts)
+      })
+
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          state.searchQuery = searchInput.value
+          applyFilters()
+          renderPosts(state.filteredPosts)
+        }
+      })
+    }
+
+    // Tag filter
+    var tagFilter = el('#tag-filter')
+    if (tagFilter) {
+      tagFilter.addEventListener('change', function() {
+        state.selectedTag = tagFilter.value
+        applyFilters()
+        renderPosts(state.filteredPosts)
+      })
+    }
+
+    // Clear filters
+    var clearBtn = el('#clear-filters')
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function() {
+        state.searchQuery = ''
+        state.selectedTag = ''
+        if (searchInput) searchInput.value = ''
+        if (tagFilter) tagFilter.value = ''
+        applyFilters()
+        renderPosts(state.filteredPosts)
+      })
+    }
+
+    // Theme toggle
+    var themeBtn = el('#theme-toggle')
+    if (themeBtn) {
+      themeBtn.addEventListener('click', toggleTheme)
     }
   } else if (page === 'contact') {
     setupContact()
