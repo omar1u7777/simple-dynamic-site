@@ -1,0 +1,46 @@
+{
+  "name": "Enkel Dynamisk Webbplats",
+  "short_name": "Min Sida",
+  "description": "En dynamisk webbplats med inlägg, profiler och kontaktformulär",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fb",
+  "theme_color": "#2b78e4",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "./assets/images/omar.jpg",
+      "sizes": "36x36",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/images/omar.jpg",
+      "sizes": "72x72",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/images/omar.jpg",
+      "sizes": "96x96",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/images/omar.jpg",
+      "sizes": "128x128",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/images/omar.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity", "social"],
+  "lang": "sv-SE",
+  "dir": "ltr"
+}
