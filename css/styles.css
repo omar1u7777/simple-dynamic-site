@@ -195,6 +195,21 @@ header {
   text-decoration: underline;
 }
 
+.share-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.share-btn:hover {
+  background: rgba(43, 120, 228, 0.1);
+}
+
 .post .meta {
   font-size: 0.9rem;
   color: var(--muted);

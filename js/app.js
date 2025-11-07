@@ -176,7 +176,7 @@ async function loadInitialPosts() {
     if (postsMsg) postsMsg.textContent = 'Visar ' + state.filteredPosts.length + ' av ' + state.postsTotal + ' inlägg'
   } catch (err) {
     toggleLoadingSpinner(false)
-    if (postsListEl) postsListEl.innerHTML = '<p class="muted">Fel vid inläsning av inlägg: ' + err.message + '</p>'
+    showError('Kunde inte ladda inlägg: ' + err.message, postsListEl)
   }
 }
 
@@ -222,7 +222,10 @@ function renderPosts(posts) {
     var commentsHtml = renderCommentsForPost(p.id)
 
     html += '<div class="comments"><strong>Kommentarer:</strong><div class="comments-list">' + commentsHtml + '</div></div>'
-    html += '<div class="post-id"><a href="post-detail.html?post=' + p.id + '" class="read-more-link">Läs mer →</a> | ID: ' + p.id + '</div>'
+    html += '<div class="post-id">'
+    html += '<a href="post-detail.html?post=' + p.id + '" class="read-more-link">Läs mer →</a> | '
+    html += '<button class="share-btn" onclick="sharePost(' + p.id + ', \'' + escapeHtml(p.title) + '\')" title="Dela inlägg">🔗 Dela</button> | '
+    html += 'ID: ' + p.id + '</div>'
 
     article.innerHTML = html
     container.appendChild(article)
@@ -490,6 +493,123 @@ function goToNextPage() {
 }
 
 /**
+ * Shares a post using the Web Share API or fallback to clipboard.
+ * @param {number} postId - The ID of the post to share.
+ * @param {string} title - The title of the post.
+ */
+function sharePost(postId, title) {
+  var url = window.location.origin + '/post-detail.html?post=' + postId
+
+  if (navigator.share) {
+    // Use Web Share API if available
+    navigator.share({
+      title: title,
+      text: 'Kolla detta inlägg: ' + title,
+      url: url
+    }).catch(function(err) {
+      console.log('Error sharing:', err)
+      fallbackShare(url, title)
+    })
+  } else {
+    fallbackShare(url, title)
+  }
+}
+
+/**
+ * Fallback sharing method using clipboard.
+ * @param {string} url - The URL to share.
+ * @param {string} title - The title of the post.
+ */
+function fallbackShare(url, title) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      showNotification('Länk kopierad till urklipp! Dela: ' + title, 'success')
+    }).catch(function(err) {
+      console.error('Failed to copy:', err)
+      showNotification('Kunde inte kopiera länk. Länken är: ' + url, 'error')
+    })
+  } else {
+    // Fallback for older browsers
+    var textArea = document.createElement('textarea')
+    textArea.value = url
+    document.body.appendChild(textArea)
+    textArea.select()
+    try {
+      document.execCommand('copy')
+      showNotification('Länk kopierad till urklipp! Dela: ' + title, 'success')
+    } catch (err) {
+      showNotification('Kunde inte kopiera länk. Länken är: ' + url, 'error')
+    }
+    document.body.removeChild(textArea)
+  }
+}
+
+/**
+ * Shows a notification message to the user.
+ * @param {string} message - The message to display.
+ * @param {string} type - The type of notification ('success', 'error', 'info').
+ */
+function showNotification(message, type) {
+  // Remove existing notifications
+  var existingNotifications = document.querySelectorAll('.notification')
+  existingNotifications.forEach(function(notification) {
+    document.body.removeChild(notification)
+  })
+
+  // Create new notification
+  var notification = document.createElement('div')
+  notification.className = 'notification notification-' + type
+  notification.textContent = message
+
+  // Style the notification
+  notification.style.position = 'fixed'
+  notification.style.top = '20px'
+  notification.style.right = '20px'
+  notification.style.padding = '1rem 1.5rem'
+  notification.style.borderRadius = '6px'
+  notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)'
+  notification.style.zIndex = '10000'
+  notification.style.maxWidth = '400px'
+  notification.style.fontWeight = '500'
+
+  if (type === 'success') {
+    notification.style.background = '#d4edda'
+    notification.style.color = '#155724'
+    notification.style.border = '1px solid #c3e6cb'
+  } else if (type === 'error') {
+    notification.style.background = '#f8d7da'
+    notification.style.color = '#721c24'
+    notification.style.border = '1px solid #f5c6cb'
+  } else {
+    notification.style.background = '#d1ecf1'
+    notification.style.color = '#0c5460'
+    notification.style.border = '1px solid #bee5eb'
+  }
+
+  document.body.appendChild(notification)
+
+  // Auto-remove after 3 seconds
+  setTimeout(function() {
+    if (notification.parentNode) {
+      document.body.removeChild(notification)
+    }
+  }, 3000)
+}
+
+/**
+ * Shows an error message to the user.
+ * @param {string} message - The error message.
+ * @param {Element} container - The container element to show error in.
+ */
+function showError(message, container) {
+  if (container) {
+    container.innerHTML = '<div class="error-message"><h3>Ett fel uppstod</h3><p>' + escapeHtml(message) + '</p><button class="btn" onclick="location.reload()">Ladda om sidan</button></div>'
+  } else {
+    showNotification(message, 'error')
+  }
+}
+
+/**
  * Shows or hides the loading spinner.
  * @param {boolean} show - Whether to show the spinner.
  */
@@ -591,6 +711,8 @@ async function loadPostDetail(postId) {
     if (retryBtn) {
       retryBtn.onclick = function() { loadPostDetail(postId) }
     }
+
+    showError('Kunde inte ladda inlägget: ' + err.message)
   }
 }
 
