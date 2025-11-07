@@ -335,7 +335,7 @@ function setupContact() {
   if (confirmBox) confirmBox.addEventListener('change', validateConfirm)
 
   if (form) {
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', async function (e) {
       e.preventDefault()
       var nok = !validateName()
       var eok = !validateEmail()
@@ -344,9 +344,55 @@ function setupContact() {
         if (msg) msg.textContent = 'Åtgärda fel innan du skickar.'
         return
       }
-      if (msg) msg.textContent = 'Meddelandet skickades (simulerat). Tack.'
-      form.reset()
-      if (sendBtn) sendBtn.disabled = true
+
+      // Show loading state
+      if (sendBtn) {
+        sendBtn.disabled = true
+        sendBtn.textContent = 'Skickar...'
+      }
+      if (msg) msg.textContent = 'Skickar meddelande...'
+
+      try {
+        // Prepare form data
+        var formData = {
+          name: nameInput.value.trim(),
+          email: emailInput.value.trim(),
+          message: 'Contact form submission from website', // Could add message field later
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent
+        }
+
+        // Send to backend (using Formspree as example - replace with your backend)
+        var response = await fetch('https://formspree.io/f/xpznqgkq', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        })
+
+        if (response.ok) {
+          // Save message locally for admin panel
+          saveContactMessage(formData)
+
+          if (msg) msg.textContent = '✅ Meddelandet skickades framgångsrikt! Tack för att du kontaktar mig.'
+          form.reset()
+          showNotification('Meddelande skickat! Jag återkommer snart.', 'success')
+        } else {
+          throw new Error('Serverfel: ' + response.status)
+        }
+
+      } catch (error) {
+        console.error('Contact form error:', error)
+        if (msg) msg.textContent = '❌ Ett fel uppstod. Försök igen senare eller kontakta mig direkt.'
+        showNotification('Kunde inte skicka meddelande. Försök igen.', 'error')
+      } finally {
+        // Reset button state
+        if (sendBtn) {
+          sendBtn.disabled = true // Keep disabled until checkbox is unchecked
+          sendBtn.textContent = 'Skicka'
+        }
+      }
     })
   }
 }
@@ -607,6 +653,180 @@ function showError(message, container) {
   } else {
     showNotification(message, 'error')
   }
+}
+
+/**
+ * Sets up the admin panel functionality.
+ */
+function setupAdminPanel() {
+  var loginSection = el('#login-section')
+  var adminPanel = el('#admin-panel')
+  var loginForm = el('#login-form')
+  var logoutBtn = el('#logout-btn')
+  var loginMessage = el('#login-message')
+
+  // Check if already logged in
+  var isLoggedIn = localStorage.getItem('admin_logged_in') === 'true'
+  if (isLoggedIn) {
+    showAdminPanel()
+  }
+
+  // Login form handler
+  if (loginForm) {
+    loginForm.addEventListener('submit', function(e) {
+      e.preventDefault()
+      var password = el('#admin-password').value
+
+      // Simple password check (in production, use proper authentication)
+      if (password === 'admin123') {
+        localStorage.setItem('admin_logged_in', 'true')
+        showAdminPanel()
+        showNotification('Inloggning lyckades!', 'success')
+      } else {
+        if (loginMessage) loginMessage.textContent = 'Fel lösenord'
+        showNotification('Fel lösenord', 'error')
+      }
+    })
+  }
+
+  // Logout handler
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function() {
+      localStorage.removeItem('admin_logged_in')
+      hideAdminPanel()
+      showNotification('Utloggad', 'info')
+    })
+  }
+
+  // Content form handler
+  var contentForm = el('#content-form')
+  if (contentForm) {
+    contentForm.addEventListener('submit', function(e) {
+      e.preventDefault()
+      var title = el('#site-title').value
+      var description = el('#site-description').value
+      var welcomeMessage = el('#welcome-message').value
+
+      // Save to localStorage (in production, save to backend)
+      localStorage.setItem('site_title', title)
+      localStorage.setItem('site_description', description)
+      localStorage.setItem('welcome_message', welcomeMessage)
+
+      showNotification('Inställningar sparade!', 'success')
+    })
+
+    // Load saved settings
+    var savedTitle = localStorage.getItem('site_title')
+    var savedDescription = localStorage.getItem('site_description')
+    var savedWelcome = localStorage.getItem('welcome_message')
+
+    if (savedTitle) el('#site-title').value = savedTitle
+    if (savedDescription) el('#site-description').value = savedDescription
+    if (savedWelcome) el('#welcome-message').value = savedWelcome
+  }
+
+  // Load analytics data
+  loadAnalyticsData()
+
+  function showAdminPanel() {
+    if (loginSection) loginSection.classList.add('hidden')
+    if (adminPanel) adminPanel.classList.remove('hidden')
+  }
+
+  function hideAdminPanel() {
+    if (loginSection) loginSection.classList.remove('hidden')
+    if (adminPanel) adminPanel.classList.add('hidden')
+  }
+}
+
+/**
+ * Loads analytics data for the admin panel.
+ */
+function loadAnalyticsData() {
+  // Mock analytics data (in production, fetch from Google Analytics API)
+  var analyticsData = {
+    totalVisits: localStorage.getItem('analytics_visits') || 0,
+    uniqueVisitors: localStorage.getItem('analytics_unique') || 0,
+    pageViews: localStorage.getItem('analytics_pageviews') || 0,
+    messages: JSON.parse(localStorage.getItem('contact_messages') || '[]')
+  }
+
+  // Update stats
+  el('#total-visits').textContent = analyticsData.totalVisits
+  el('#unique-visitors').textContent = analyticsData.uniqueVisitors
+  el('#page-views').textContent = analyticsData.pageViews
+  el('#messages-count').textContent = analyticsData.messages.length
+
+  // Show messages
+  var messagesList = el('#messages-list')
+  if (messagesList && analyticsData.messages.length > 0) {
+    var html = ''
+    analyticsData.messages.forEach(function(msg, index) {
+      html += '<div class="message-item' + (msg.read ? '' : ' unread') + '">'
+      html += '<div class="message-header">'
+      html += '<strong>' + escapeHtml(msg.name) + '</strong> - ' + new Date(msg.timestamp).toLocaleDateString('sv-SE')
+      html += '<span>' + escapeHtml(msg.email) + '</span>'
+      html += '</div>'
+      html += '<p>' + escapeHtml(msg.message || 'Kontaktformulär') + '</p>'
+      html += '<div class="message-actions">'
+      html += '<button class="btn" onclick="markAsRead(' + index + ')">Markera som läst</button>'
+      html += '</div>'
+      html += '</div>'
+    })
+    messagesList.innerHTML = html
+  } else if (messagesList) {
+    messagesList.innerHTML = '<p>Inga meddelanden än.</p>'
+  }
+}
+
+/**
+ * Marks a contact message as read.
+ * @param {number} index - The message index.
+ */
+function markAsRead(index) {
+  var messages = JSON.parse(localStorage.getItem('contact_messages') || '[]')
+  if (messages[index]) {
+    messages[index].read = true
+    localStorage.setItem('contact_messages', JSON.stringify(messages))
+    loadAnalyticsData()
+    showNotification('Meddelande markerat som läst', 'info')
+  }
+}
+
+/**
+ * Saves a contact message locally for the admin panel.
+ * @param {object} messageData - The message data.
+ */
+function saveContactMessage(messageData) {
+  var messages = JSON.parse(localStorage.getItem('contact_messages') || '[]')
+  messages.unshift({
+    name: messageData.name,
+    email: messageData.email,
+    message: messageData.message || 'Contact form submission',
+    timestamp: messageData.timestamp,
+    read: false
+  })
+  localStorage.setItem('contact_messages', JSON.stringify(messages))
+}
+
+/**
+ * Updates analytics counters.
+ * @param {string} event - The event type.
+ */
+function updateAnalytics(event) {
+  var visits = parseInt(localStorage.getItem('analytics_visits') || '0') + 1
+  var pageViews = parseInt(localStorage.getItem('analytics_pageviews') || '0') + 1
+  var unique = localStorage.getItem('analytics_unique') || '0'
+
+  // Simple unique visitor tracking (not accurate, but for demo)
+  if (!localStorage.getItem('analytics_session')) {
+    unique = parseInt(unique) + 1
+    localStorage.setItem('analytics_unique', unique)
+    localStorage.setItem('analytics_session', 'true')
+  }
+
+  localStorage.setItem('analytics_visits', visits)
+  localStorage.setItem('analytics_pageviews', pageViews)
 }
 
 /**
@@ -886,12 +1106,73 @@ function registerServiceWorker() {
 }
 
 /**
+ * Initializes Google Analytics tracking.
+ */
+function initAnalytics() {
+  // Track page views
+  gtag('config', 'GA_MEASUREMENT_ID', {
+    page_title: document.title,
+    page_location: window.location.href
+  })
+
+  // Track custom events
+  function trackEvent(action, category, label) {
+    gtag('event', action, {
+      event_category: category,
+      event_label: label
+    })
+    // Also update local analytics
+    updateAnalytics(action)
+  }
+
+  // Track form submissions
+  document.addEventListener('submit', function(e) {
+    if (e.target.id === 'contact-form') {
+      trackEvent('submit', 'contact', 'contact_form')
+    }
+  })
+
+  // Track post detail views
+  if (window.location.pathname.includes('post-detail.html')) {
+    var urlParams = new URLSearchParams(window.location.search)
+    var postId = urlParams.get('post')
+    if (postId) {
+      trackEvent('view', 'post', 'post_' + postId)
+    }
+  }
+
+  // Track search usage
+  var searchInput = document.getElementById('search-input')
+  if (searchInput) {
+    var searchTimeout
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout)
+      searchTimeout = setTimeout(function() {
+        if (searchInput.value.length > 2) {
+          trackEvent('search', 'posts', searchInput.value)
+        }
+      }, 1000)
+    })
+  }
+
+  // Track theme changes
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'theme') {
+      trackEvent('change', 'theme', e.newValue)
+    }
+  })
+
+  console.log('Analytics initialized')
+}
+
+/**
  * Initializes the application based on the current page.
  */
 document.addEventListener('DOMContentLoaded', function () {
   setupNav()
   loadUserPreferences()
   registerServiceWorker()
+  initAnalytics()
 
   var page = document.body.dataset.page
   if (page === 'posts') {
@@ -988,5 +1269,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   } else if (page === 'contact') {
     setupContact()
+  } else if (page === 'admin') {
+    setupAdminPanel()
   }
 })
