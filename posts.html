@@ -49,7 +49,12 @@
             </div>
           </div>
           <div class="posts-actions">
-            <button id="load-more" class="btn">Ladda fler</button>
+            <div id="pagination-controls" class="pagination-controls" style="display: none;">
+              <button id="prev-page" class="btn pagination-btn" disabled>← Föregående</button>
+              <span id="page-info" class="page-info">Sida 1 av 1</span>
+              <button id="next-page" class="btn pagination-btn" disabled>Nästa →</button>
+            </div>
+            <button id="load-more" class="btn" style="display: none;">Ladda fler</button>
             <p id="posts-message" class="muted"></p>
           </div>
         </div>

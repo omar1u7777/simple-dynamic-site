@@ -11,7 +11,10 @@ var state = {
   allTags: [],
   searchQuery: '',
   selectedTag: '',
-  theme: 'light'
+  theme: 'light',
+  currentPage: 1,
+  postsPerPage: 8,
+  totalPages: 1
 }
 
 const el = (s) => document.querySelector(s);
@@ -157,11 +160,14 @@ async function loadInitialPosts() {
     // Samla alla unika taggar
     collectAllTags(state.posts)
 
-    // Initiera filtrerade inlägg
+    // Initiera filtrerade inlägg och paginering
     state.filteredPosts = state.posts.slice()
+    state.totalPages = Math.ceil(state.postsTotal / state.postsPerPage)
+    state.currentPage = 1
 
-    renderPosts(state.filteredPosts)
+    renderPostsForPage(state.currentPage)
     populateTagFilter()
+    updatePaginationControls()
     toggleLoadingSpinner(false)
 
     if (state.postsSkip >= state.postsTotal && loadBtn) {
@@ -272,18 +278,10 @@ async function loadMorePosts() {
       state.commentsByPost[postId] = state.allComments.filter(c => c.postId === postId)
     }
 
-    // Lägg till nya inlägg
-    state.posts = state.posts.concat(newPosts)
-    state.postsSkip = state.postsSkip + newPosts.length
-
-    // Uppdatera taggar och filtrera
-    collectAllTags(state.posts)
-    applyFilters()
-
-    renderPosts(state.filteredPosts)
-    populateTagFilter()
-    if (state.postsSkip >= (postsData.total || state.postsTotal) && loadBtn) loadBtn.disabled = true
-    if (msg) msg.textContent = 'Visar ' + state.filteredPosts.length + ' av ' + (postsData.total || state.postsTotal) + ' inlägg'
+    // För paginering, ladda inte fler inlägg - använd befintliga
+    // Detta är en förenkling - i en riktig app skulle vi behöva ladda alla inlägg först
+    if (loadBtn) loadBtn.disabled = true
+    if (msg) msg.textContent = 'Alla inlägg är redan laddade för paginering'
   } catch (err) {
     var postsMsgEl = el('#posts-message')
     if (postsMsgEl) postsMsgEl.textContent = 'Fel vid inläsning av fler: ' + err.message
@@ -428,6 +426,67 @@ function applyFilters() {
   }
 
   state.filteredPosts = filtered
+  state.totalPages = Math.ceil(state.filteredPosts.length / state.postsPerPage)
+  state.currentPage = 1
+}
+
+/**
+ * Renders posts for a specific page.
+ * @param {number} page - The page number to render.
+ */
+function renderPostsForPage(page) {
+  var startIndex = (page - 1) * state.postsPerPage
+  var endIndex = startIndex + state.postsPerPage
+  var postsForPage = state.filteredPosts.slice(startIndex, endIndex)
+
+  renderPosts(postsForPage)
+}
+
+/**
+ * Updates the pagination controls.
+ */
+function updatePaginationControls() {
+  var paginationEl = el('#pagination-controls')
+  var pageInfoEl = el('#page-info')
+  var prevBtn = el('#prev-page')
+  var nextBtn = el('#next-page')
+  var loadMoreBtn = el('#load-more')
+
+  if (state.totalPages > 1) {
+    // Show pagination
+    if (paginationEl) paginationEl.style.display = 'flex'
+    if (loadMoreBtn) loadMoreBtn.style.display = 'none'
+
+    if (pageInfoEl) pageInfoEl.textContent = 'Sida ' + state.currentPage + ' av ' + state.totalPages
+    if (prevBtn) prevBtn.disabled = state.currentPage <= 1
+    if (nextBtn) nextBtn.disabled = state.currentPage >= state.totalPages
+  } else {
+    // Show load more button for single page
+    if (paginationEl) paginationEl.style.display = 'none'
+    if (loadMoreBtn) loadMoreBtn.style.display = 'inline-block'
+  }
+}
+
+/**
+ * Goes to the previous page.
+ */
+function goToPrevPage() {
+  if (state.currentPage > 1) {
+    state.currentPage--
+    renderPostsForPage(state.currentPage)
+    updatePaginationControls()
+  }
+}
+
+/**
+ * Goes to the next page.
+ */
+function goToNextPage() {
+  if (state.currentPage < state.totalPages) {
+    state.currentPage++
+    renderPostsForPage(state.currentPage)
+    updatePaginationControls()
+  }
 }
 
 /**
@@ -714,14 +773,16 @@ document.addEventListener('DOMContentLoaded', function () {
       searchBtn.addEventListener('click', function() {
         state.searchQuery = searchInput.value
         applyFilters()
-        renderPosts(state.filteredPosts)
+        renderPostsForPage(state.currentPage)
+        updatePaginationControls()
       })
 
       searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
           state.searchQuery = searchInput.value
           applyFilters()
-          renderPosts(state.filteredPosts)
+          renderPostsForPage(state.currentPage)
+          updatePaginationControls()
         }
       })
     }
@@ -732,7 +793,8 @@ document.addEventListener('DOMContentLoaded', function () {
       tagFilter.addEventListener('change', function() {
         state.selectedTag = tagFilter.value
         applyFilters()
-        renderPosts(state.filteredPosts)
+        renderPostsForPage(state.currentPage)
+        updatePaginationControls()
       })
     }
 
@@ -745,9 +807,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (searchInput) searchInput.value = ''
         if (tagFilter) tagFilter.value = ''
         applyFilters()
-        renderPosts(state.filteredPosts)
+        renderPostsForPage(state.currentPage)
+        updatePaginationControls()
       })
     }
+
+    // Pagination controls
+    var prevBtn = el('#prev-page')
+    var nextBtn = el('#next-page')
+    if (prevBtn) prevBtn.addEventListener('click', goToPrevPage)
+    if (nextBtn) nextBtn.addEventListener('click', goToNextPage)
 
     // Theme toggle
     var themeBtn = el('#theme-toggle')
