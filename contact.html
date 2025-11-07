@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kontakt</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="contact">
+  <header>
+    <nav class="nav">
+      <div class="nav-brand">
+        <img src="./assets/images/omar.jpg" alt="Profilbild för Omar Alhaek" class="header-avatar" width="36" height="36" loading="lazy">
+        <a href="index.html">Min Sida</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html" data-nav="home">Hem</a></li>
+        <li><a href="posts.html" data-nav="posts">Inlägg</a></li>
+        <li><a href="contact.html" data-nav="contact">Kontakt</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Öppna navigation">☰</button>
+    </nav>
+  </header>
+  <main>
+    <section class="contact-section">
+      <h1>Kontakt</h1>
+      <form id="contact-form" novalidate>
+        <div class="form-row">
+          <label for="name">Namn</label>
+          <input type="text" id="name" name="name" required aria-required="true">
+          <div class="error" id="error-name"></div>
+        </div>
+        <div class="form-row">
+          <label for="email">E-post</label>
+          <input type="email" id="email" name="email" required aria-required="true">
+          <div class="error" id="error-email"></div>
+        </div>
+        <div class="form-row checkbox-row">
+          <input type="checkbox" id="confirm" name="confirm">
+          <label for="confirm">Bekräfta för att skicka</label>
+          <div class="error" id="error-confirm"></div>
+        </div>
+        <div class="form-row">
+          <button id="send-btn" class="btn" type="submit" disabled>Skicka</button>
+        </div>
+        <div id="form-message" class="muted"></div>
+      </form>
+    </section>
+  </main>
+  <footer>
+    <p>Omar Alhaek — Frontend Dev</p>
+  </footer>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

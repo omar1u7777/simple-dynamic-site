@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Enkel dynamisk webbplats — Hem</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="home">
+  <header>
+    <nav class="nav">
+      <div class="nav-brand">
+        <img src="./assets/images/omar.jpg" alt="Profilbild för Omar Alhaek" class="header-avatar" width="36" height="36" loading="lazy">
+        <a href="index.html">Min Sida</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html" data-nav="home">Hem</a></li>
+        <li><a href="posts.html" data-nav="posts">Inlägg</a></li>
+        <li><a href="contact.html" data-nav="contact">Kontakt</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Öppna navigation">☰</button>
+    </nav>
+  </header>
+  <main>
+    <section class="hero">
+      <h1>Välkommen</h1>
+      <p>Denna enkla dynamiska webbplats visar inlägg, användarprofiler, kommentarer och ett kontaktformulär. Gå till sidan "Inlägg" för att bläddra och klicka på ett användarnamn för att se profilen.</p>
+      <p>Instruktioner: Gå till "Inlägg" för att ladda inlägg. På kontaktsidan fyller du i formuläret och bekräftar för att kunna skicka.</p>
+    </section>
+    <section class="features">
+      <article>
+        <h2>Inlägg</h2>
+        <p>Dynamiska inlägg hämtade från ett API. Varje inlägg visar titel, innehåll, taggar, reaktioner och kommentarer.</p>
+      </article>
+      <article>
+        <h2>Profiler</h2>
+        <p>Klicka på ett användarnamn för att öppna en modal med profilinformation (namn, e-post, adress och mer).</p>
+      </article>
+      <article>
+        <h2>Kontakt</h2>
+        <p>Enkelt validerat kontaktformulär för att skicka meddelande.</p>
+      </article>
+    </section>
+  </main>
+  <footer>
+    <p>Omar Alhaek — Frontend Dev</p>
+  </footer>
+  <div id="modal" class="modal" aria-hidden="true"></div>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
